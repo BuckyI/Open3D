@@ -67,17 +67,20 @@ def integrate(depth_file_names, color_file_names, intrinsic, extrinsics, config)
         # Get active frustum block coordinates from input
         frustum_block_coords = vbg.compute_unique_block_coordinates(
             depth, intrinsic, extrinsic, config.depth_scale, config.depth_max
-        )
+        )  # Nx3 tensor
         # Activate them in the underlying hash map (may have been inserted)
+        # 在 hashmap 中初始化 frustum_block_coords 坐标作为 key，保证每个坐标都可以被找到
         vbg.hashmap().activate(frustum_block_coords)
 
         # Find buf indices in the underlying engine
+        # 查询每个坐标对应的 buf_indices（activate不会返回重复坐标对应的 buf_indices）
+        # 经过 activate，坐标都可以被找到，所以 masks 全为 True
         buf_indices, masks = vbg.hashmap().find(frustum_block_coords)
         o3d.core.cuda.synchronize()
         end = time.time()
 
         start = time.time()
-        voxel_coords, voxel_indices = vbg.voxel_coordinates_and_flattened_indices(buf_indices)
+        voxel_coords, voxel_indices = vbg.voxel_coordinates_and_flattened_indices(buf_indices)  # Mx3 tensor, Mx1 tensor
         o3d.core.cuda.synchronize()
         end = time.time()
 
