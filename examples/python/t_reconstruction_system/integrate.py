@@ -48,16 +48,16 @@ def integrate(depth_file_names, color_file_names, depth_intrinsic, color_intrins
             block_resolution=16,
             block_count=50000,
             device=device,
-        )
+        )  # open3d.cpu.pybind.t.geometry.VoxelBlockGrid
 
     start = time.time()
     for i in tqdm(range(n_files)):
-        depth = o3d.t.io.read_image(depth_file_names[i]).to(device)
-        extrinsic = extrinsics[i]
+        depth = o3d.t.io.read_image(depth_file_names[i]).to(device)  # Image
+        extrinsic = extrinsics[i]  # 4x4 tensor
 
         frustum_block_coords = vbg.compute_unique_block_coordinates(
             depth, depth_intrinsic, extrinsic, config.depth_scale, config.depth_max
-        )
+        )  # Nx3 tensor
 
         if config.integrate_color:
             color = o3d.t.io.read_image(color_file_names[i]).to(device)
@@ -73,7 +73,7 @@ def integrate(depth_file_names, color_file_names, depth_intrinsic, color_intrins
             )
         else:
             vbg.integrate(frustum_block_coords, depth, depth_intrinsic, extrinsic, config.depth_scale, config.depth_max)
-        dt = time.time() - start
+    dt = time.time() - start
     print("Finished integrating {} frames in {} seconds".format(n_files, dt))
 
     return vbg
@@ -119,3 +119,5 @@ if __name__ == "__main__":
 
     mesh = vbg.extract_triangle_mesh()
     o3d.visualization.draw([mesh.to_legacy()])
+
+    vbg.save(config.path_npz)

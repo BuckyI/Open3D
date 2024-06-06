@@ -134,6 +134,7 @@ def load_intrinsic(config, key="depth"):
     if path_intrinsic is None or path_intrinsic == "":
         intrinsic = o3d.camera.PinholeCameraIntrinsic(o3d.camera.PinholeCameraIntrinsicParameters.PrimeSenseDefault)
     else:
+        # 文件格式参见 default_intrinsics.json 以及 https://github.com/isl-org/Open3D/issues/1847
         intrinsic = o3d.io.read_pinhole_camera_intrinsic(path_intrinsic)
 
     if config.engine == "legacy":
