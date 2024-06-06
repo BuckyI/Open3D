@@ -46,8 +46,11 @@ if __name__ == "__main__":
         default="lounge",
     )
     parser.add("--path_trajectory", help="path to the trajectory .log or .json file.")
-    parser.add("--path_npz", required=True, help="path to the npz file that stores voxel block grid.")
+    parser.add("--path_npz", help="path to the npz file that stores voxel block grid.")
     config = parser.get_config()
+    # 手动指定，方便调试学习
+    config.path_npz = r"E:\Open3D\examples\python\t_reconstruction_system\vbg.npz"
+    assert os.path.isfile(config.path_npz), f"File {config.path_npz} not found."
 
     if config.path_dataset == "":
         config = get_default_dataset(config)
