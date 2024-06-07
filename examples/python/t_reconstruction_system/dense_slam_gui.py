@@ -53,17 +53,21 @@ class ReconstructionWindow:
 
         # First panel
         self.panel = gui.Vert(spacing, margins)
+        # NOTE: Vertical layout, First argument is the spacing between widgets, the second is the margins.
 
         ## Items in fixed props
-        self.fixed_prop_grid = gui.VGrid(2, spacing, gui.Margins(em, 0, em, 0))
+        self.fixed_prop_grid = gui.VGrid(2, spacing, gui.Margins(em, 0, em, 0))  # Grid layout
+        # NOTE: arguments are the number of columns, the spacing between items (both vertically and horizontally), the margins.
+        # NOTE: open3d.visualization.gui.Margins(left, top, right, bottom)
 
         ### Depth scale slider
-        scale_label = gui.Label("Depth scale")
-        self.scale_slider = gui.Slider(gui.Slider.INT)
+        scale_label = gui.Label("Depth scale")  # Displays text
+        self.scale_slider = gui.Slider(gui.Slider.INT)  # A slider widget for visually selecting numbers
         self.scale_slider.set_limits(1000, 5000)
-        self.scale_slider.int_value = int(config.depth_scale)
+        self.scale_slider.int_value = int(config.depth_scale)  # Slider value (int), set default value
         self.fixed_prop_grid.add_child(scale_label)
         self.fixed_prop_grid.add_child(self.scale_slider)
+        # NOTE: fixed_prop_grid 有两列，所以这里两个 child 处于一行
 
         voxel_size_label = gui.Label("Voxel size")
         self.voxel_size_slider = gui.Slider(gui.Slider.DOUBLE)
@@ -96,7 +100,7 @@ class ReconstructionWindow:
         ## Items in adjustable props
         self.adjustable_prop_grid = gui.VGrid(2, spacing, gui.Margins(em, 0, em, 0))
 
-        ### Reconstruction interval
+        ### Reconstruction interval: 可视化更新间隔
         interval_label = gui.Label("Recon. interval")
         self.interval_slider = gui.Slider(gui.Slider.INT)
         self.interval_slider.set_limits(1, 500)
@@ -134,7 +138,7 @@ class ReconstructionWindow:
         self.adjustable_prop_grid.add_child(raycast_label)
         self.adjustable_prop_grid.add_child(self.raycast_box)
 
-        set_enabled(self.fixed_prop_grid, True)
+        set_enabled(self.fixed_prop_grid, True)  # 设置这些控件可用，但不设置默认也是可用的
 
         ## Application control
         b = gui.ToggleSwitch("Resume/Pause")
@@ -194,8 +198,8 @@ class ReconstructionWindow:
         self.widget3d.scene = rendering.Open3DScene(self.window.renderer)
         self.widget3d.scene.set_background([1, 1, 1, 1])
 
-        w.set_on_layout(self._on_layout)
-        w.set_on_close(self._on_close)
+        w.set_on_layout(self._on_layout)  # Sets a callback function that manually sets the frames of children of the window
+        w.set_on_close(self._on_close)  # Sets a callback that will be called when the window is closed.
 
         self.is_done = False
 
@@ -210,23 +214,32 @@ class ReconstructionWindow:
         threading.Thread(name="UpdateMain", target=self.update_main).start()
 
     def _on_layout(self, ctx):
-        em = ctx.theme.font_size
+        # 代码理解参考 https://blog.csdn.net/qq_31254435/article/details/122910695
+        em = ctx.theme.font_size  # 使用字体大小设置相对距离
 
         panel_width = 20 * em
-        rect = self.window.content_rect
+        rect = self.window.content_rect  # 获取应用窗口的框架大小，让渲染窗口占满整个框架
 
+        # frame 是元素的外边框，通过设定它来设置位置和尺寸
+        # panel 放置在左侧，宽度为 20 个字符，高度为框架高度
         self.panel.frame = gui.Rect(rect.x, rect.y, panel_width, rect.height)
+        # NOTE: gui.Rect(left, up width, height)
 
+        # widget3d 放置在右侧，填充剩余空间
         x = self.panel.frame.get_right()
         self.widget3d.frame = gui.Rect(x, rect.y, rect.get_right() - x, rect.height)
 
+        # fps panel 放置在右上角
         fps_panel_width = 7 * em
         fps_panel_height = 2 * em
         self.fps_panel.frame = gui.Rect(rect.get_right() - fps_panel_width, rect.y, fps_panel_width, fps_panel_height)
 
     # Toggle callback: application's main controller
     def _on_switch(self, is_on):
-        if not self.is_started:
+        if not self.is_started:  # 如果还没有开始重建，就进行初始化
+            # Runs the provided function on the main thread.
+            # This can be used to execute UI-related code at a safe point in time.
+            # If the UI changes, you will need to manually request a redraw of the window with w.post_redraw()
             gui.Application.instance.post_to_main_thread(self.window, self._on_start)
         self.is_running = not self.is_running
 
@@ -250,8 +263,8 @@ class ReconstructionWindow:
         )
         self.is_started = True
 
-        set_enabled(self.fixed_prop_grid, False)
-        set_enabled(self.adjustable_prop_grid, True)
+        set_enabled(self.fixed_prop_grid, False)  # 初始化后，参数固定不可更改
+        set_enabled(self.adjustable_prop_grid, True)  # 重建参数可以调整
 
     def _on_close(self):
         self.is_done = True
@@ -274,6 +287,8 @@ class ReconstructionWindow:
         return True
 
     def init_render(self, depth_ref, color_ref):
+        # NOTE: colorize_depth(scale: float, min_value: float, max_value: float)
+        # NOTE: to_legacy: Convert to a legacy Open3D axis-aligned box.
         self.input_depth_image.update_image(
             depth_ref.colorize_depth(
                 float(self.scale_slider.int_value), config.depth_min, self.max_slider.double_value
@@ -281,19 +296,22 @@ class ReconstructionWindow:
         )
         self.input_color_image.update_image(color_ref.to_legacy())
 
+        # raycast 图片也被设为了输入图片
         self.raycast_depth_image.update_image(
             depth_ref.colorize_depth(
                 float(self.scale_slider.int_value), config.depth_min, self.max_slider.double_value
             ).to_legacy()
         )
         self.raycast_color_image.update_image(color_ref.to_legacy())
-        self.window.set_needs_layout()
+        self.window.set_needs_layout()  # Flags window to re-layout
 
+        # 设置相机视角
         bbox = o3d.geometry.AxisAlignedBoundingBox([-5, -5, -5], [5, 5, 5])
         self.widget3d.setup_camera(60, bbox, [0, 0, 0])
         self.widget3d.look_at([0, 0, 0], [0, -1, -3], [0, -1, 0])
 
     def update_render(self, input_depth, input_color, raycast_depth, raycast_color, pcd, frustum):
+        # 更新输入图片
         self.input_depth_image.update_image(
             input_depth.colorize_depth(
                 float(self.scale_slider.int_value), config.depth_min, self.max_slider.double_value
@@ -301,6 +319,7 @@ class ReconstructionWindow:
         )
         self.input_color_image.update_image(input_color.to_legacy())
 
+        # 更新渲染图片
         self.raycast_depth_image.update_image(
             raycast_depth.colorize_depth(
                 float(self.scale_slider.int_value), config.depth_min, self.max_slider.double_value
@@ -308,6 +327,7 @@ class ReconstructionWindow:
         )
         self.raycast_color_image.update_image((raycast_color).to(o3c.uint8, False, 255.0).to_legacy())
 
+        # 场景更新
         if self.is_scene_updated:
             if pcd is not None and pcd.point.positions.shape[0] > 0:
                 self.widget3d.scene.scene.update_geometry(
@@ -340,9 +360,10 @@ class ReconstructionWindow:
         raycast_frame.set_data_from_image("depth", depth_ref)
         raycast_frame.set_data_from_image("color", color_ref)
 
+        # 初始化，更新 UI, 显示输入图片，更新相机位置
         gui.Application.instance.post_to_main_thread(self.window, lambda: self.init_render(depth_ref, color_ref))
 
-        fps_interval_len = 30
+        fps_interval_len = 30  # 每 30 个帧计算一次 fps
         self.idx = 0
         pcd = None
 
@@ -352,12 +373,14 @@ class ReconstructionWindow:
                 time.sleep(0.05)
                 continue
 
+            # 读取图片
             depth = o3d.t.io.read_image(depth_file_names[self.idx]).to(device)
             color = o3d.t.io.read_image(color_file_names[self.idx]).to(device)
 
             input_frame.set_data_from_image("depth", depth)
             input_frame.set_data_from_image("color", color)
 
+            # fusion
             if self.idx > 0:
                 result = self.model.track_frame_to_model(
                     input_frame,
@@ -384,6 +407,8 @@ class ReconstructionWindow:
                 self.raycast_box.checked,
             )
 
+            ## 更新 GUI
+            # 更新点云
             if (
                 (self.idx % self.interval_slider.int_value == 0 and self.update_box.checked)
                 or (self.idx == 3)
@@ -396,9 +421,11 @@ class ReconstructionWindow:
             else:
                 self.is_scene_updated = False
 
+            # 更新相机可视化
             frustum = o3d.geometry.LineSet.create_camera_visualization(
                 color.columns, color.rows, intrinsic.numpy(), np.linalg.inv(T_frame_to_model.cpu().numpy()), 0.2
             )
+            # NOTE: T_frame_to_model 是相机空间到世界空间的坐标变换，也就是世界坐标轴在相机坐标系下的位置，画相机时需要相机坐标轴在世界坐标系下的位置
             frustum.paint_uniform_color([0.961, 0.475, 0.000])
 
             # Output FPS
@@ -422,6 +449,8 @@ class ReconstructionWindow:
 
             self.output_info.text = info
 
+            # 更新 UI （所有更新 UI 的操作都需要放到主线程去执行！
+            # NOTE: get_data_as_image: 从 frame 中取出 open3d::t::geometry::Image
             gui.Application.instance.post_to_main_thread(
                 self.window,
                 lambda: self.update_render(
@@ -429,8 +458,8 @@ class ReconstructionWindow:
                     input_frame.get_data_as_image("color"),
                     raycast_frame.get_data_as_image("depth"),
                     raycast_frame.get_data_as_image("color"),
-                    pcd,
-                    frustum,
+                    pcd,  # 可视化点云
+                    frustum,  # 可视化相机
                 ),
             )
 

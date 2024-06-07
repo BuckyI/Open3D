@@ -32,6 +32,7 @@ def slam(depth_file_names, color_file_names, intrinsic, config):
 
     T_frame_to_model = o3d.core.Tensor(np.identity(4))
     model = o3d.t.pipelines.slam.Model(config.voxel_size, 16, config.block_count, T_frame_to_model, device)
+    # 读取第一张深度图，以获取深度图的尺寸，初始化 Frame
     depth_ref = o3d.t.io.read_image(depth_file_names[0])
     input_frame = o3d.t.pipelines.slam.Frame(depth_ref.rows, depth_ref.columns, intrinsic, device)
     raycast_frame = o3d.t.pipelines.slam.Frame(depth_ref.rows, depth_ref.columns, intrinsic, device)
@@ -43,7 +44,7 @@ def slam(depth_file_names, color_file_names, intrinsic, config):
 
         depth = o3d.t.io.read_image(depth_file_names[i]).to(device)
         color = o3d.t.io.read_image(color_file_names[i]).to(device)
-
+        # 更新 Frame
         input_frame.set_data_from_image("depth", depth)
         input_frame.set_data_from_image("color", color)
 
