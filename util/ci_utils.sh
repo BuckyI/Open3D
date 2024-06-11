@@ -148,7 +148,7 @@ build_pip_package() {
 
     BUILD_FILAMENT_FROM_SOURCE=OFF
     set +u
-    if [ -f "${OPEN3D_ML_ROOT}/set_open3d_ml_root.sh" ]; then
+    if [ -f "${OPEN3D_ML_ROOT}/set_open3d_ml_root.sh" ]; then # 如果文件存在，对 OPEN3D_ML 进行编译
         echo "Open3D-ML available at ${OPEN3D_ML_ROOT}. Bundling Open3D-ML in wheel."
         # the build system of the main repo expects a main branch. make sure main exists
         git -C "${OPEN3D_ML_ROOT}" checkout -b main || true

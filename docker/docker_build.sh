@@ -196,8 +196,20 @@ cuda_wheel_build() {
     echo "[cuda_wheel_build()] BUILD_TENSORFLOW_OPS=${BUILD_TENSORFLOW_OPS:?'env var must be set.'}"
     echo "[cuda_wheel_build()] BUILD_PYTORCH_OPS=${BUILD_PYTORCH_OPS:?'env var must be set.'}"
 
+    echo "BASE_IMAGE=${BASE_IMAGE}"
+    echo "DEVELOPER_BUILD=${DEVELOPER_BUILD}"
+    echo "CCACHE_TAR_NAME=${CCACHE_TAR_NAME}"
+    echo "CMAKE_VERSION=${CMAKE_VERSION}"
+    echo "CCACHE_VERSION=${CCACHE_VERSION}"
+    echo "PYTHON_VERSION=${PYTHON_VERSION}"
+    echo "BUILD_TENSORFLOW_OPS=${BUILD_TENSORFLOW_OPS}"
+    echo "BUILD_PYTORCH_OPS=${BUILD_PYTORCH_OPS}"
+    echo "CI=${CI:-}"
+
+
     pushd "${HOST_OPEN3D_ROOT}"
     docker build \
+        --network=host \
         --progress plain \
         --build-arg BASE_IMAGE="${BASE_IMAGE}" \
         --build-arg DEVELOPER_BUILD="${DEVELOPER_BUILD}" \

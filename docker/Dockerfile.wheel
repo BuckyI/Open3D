@@ -39,21 +39,21 @@ RUN export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn \
  && apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/3bf863cc.pub \
  && apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/7fa2af80.pub
 
-# Dependencies: basic
+# Dependencies: basic 安装基础依赖软件
 RUN apt-get update && apt-get install -y \
     git  \
     wget \
     curl \
  && rm -rf /var/lib/apt/lists/*
 
-# Dependencies: cmake
+# Dependencies: cmake 安装 cmake
 RUN CMAKE_VERSION_NUMBERS=$(echo "${CMAKE_VERSION}" | cut -d"-" -f2) \
  && wget -q https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION_NUMBERS}/${CMAKE_VERSION}.tar.gz \
  && tar -xf ${CMAKE_VERSION}.tar.gz \
  && cp -ar ${CMAKE_VERSION} ${HOME}
 ENV PATH=${HOME}/${CMAKE_VERSION}/bin:${PATH}
 
-# Dependencies: ccache
+# Dependencies: ccache 安装 ccache，用于加速编译
 WORKDIR /root
 RUN git clone https://github.com/ccache/ccache.git \
  && cd ccache \
@@ -83,7 +83,7 @@ RUN CCACHE_DIR=$(ccache -p | grep cache_dir | grep -oE "[^ ]+$") \
 RUN ccache -M 5G \
  && ccache -s
 
-# Miniconda
+# Miniconda 配置 python 环境
 ENV PATH="/root/miniconda3/bin:${PATH}"
 RUN wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
  && bash Miniconda3-latest-Linux-x86_64.sh -b \
@@ -97,11 +97,18 @@ RUN which python \
 
 # Checkout Open3D-ML main branch
 # TODO: We may add support for local Open3D-ML repo or pinned ML repo tag
+# 该部分可选，会影响到后面 build_pip_package 是否 build 该部分
+# 如果运行，则需要保证 BUILD_PYTORCH_OPS 和 BUILD_TENSORFLOW_OPS 其一为 ON
 ENV OPEN3D_ML_ROOT=/root/Open3D-ML
 RUN git clone https://github.com/isl-org/Open3D-ML.git ${OPEN3D_ML_ROOT}
 
+# NOTE: 接下来的代码有问题，之前 `cd ${CCACHE_DIR_PARENT}`，在本目录下没有 util, python 等目录
+# 应该是需 git clone https://github.com/isl-org/Open3D /root/Open3D
+# cd 之后，再手动执行下方相关命令！
+
 # Open3D C++ dependencies
 # Done before copying the full Open3D directory for better Docker caching
+# NOTE: 这里如果遇到  sudo: command not found 问题，需要 export SUDO=command
 COPY ./util/install_deps_ubuntu.sh /root/Open3D/util/
 RUN /root/Open3D/util/install_deps_ubuntu.sh assume-yes \
  && rm -rf /var/lib/apt/lists/*
